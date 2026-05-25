@@ -33,8 +33,8 @@ sio = socketio.AsyncServer(
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
-# Socket.IO app
-socket_app = socketio.ASGIApp(sio, app)
+# Socket.IO app - mounted at /api/socket.io to work with Kubernetes ingress
+socket_app = socketio.ASGIApp(sio, app, socketio_path='/api/socket.io')
 
 # Configure logging
 logging.basicConfig(
