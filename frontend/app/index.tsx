@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { useAuth } from '../src/contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function Index() {
   const { user, loading, login } = useAuth();
@@ -16,142 +18,154 @@ export default function Index() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#4285F4" />
-        <Text style={styles.loadingText}>Carregando...</Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#B91C1C" />
+          <Text style={styles.loadingText}>Carregando...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <LinearGradient
-      colors={['#667eea', '#764ba2']}
-      style={styles.container}
-    >
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.content}>
-        <View style={styles.iconContainer}>
-          <Text style={styles.icon}>💬</Text>
-        </View>
-        
-        <Text style={styles.title}>Social Voice Hub</Text>
-        <Text style={styles.subtitle}>
-          Chat ao vivo e comunicação por voz com seus amigos
-        </Text>
+        {/* Top spacer */}
+        <View style={styles.topSpacer} />
 
-        <TouchableOpacity 
-          style={styles.loginButton}
+        {/* App Title */}
+        <Text style={styles.title} testID="app-title">SVH</Text>
+
+        {/* Main red pill button */}
+        <TouchableOpacity
+          style={styles.buttonShadow}
           onPress={login}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
+          testID="login-button"
         >
-          <Image 
-            source={{ uri: 'https://www.google.com/favicon.ico' }}
-            style={styles.googleIcon}
-          />
-          <Text style={styles.loginButtonText}>Entrar com Google</Text>
+          <LinearGradient
+            colors={['#DC2626', '#991B1B', '#7F1D1D']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.button}
+          >
+            {/* Inner highlight to create gloss effect */}
+            <LinearGradient
+              colors={['rgba(255,255,255,0.35)', 'rgba(255,255,255,0)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 0.5 }}
+              style={styles.buttonGloss}
+            />
+            <View style={styles.buttonInner}>
+              <Ionicons name="logo-google" size={26} color="#FFFFFF" style={styles.buttonIcon} />
+              <Text style={styles.buttonText}>Entrar</Text>
+            </View>
+          </LinearGradient>
         </TouchableOpacity>
 
-        <View style={styles.features}>
-          <View style={styles.feature}>
-            <Text style={styles.featureIcon}>💬</Text>
-            <Text style={styles.featureText}>Chat ao Vivo</Text>
-          </View>
-          <View style={styles.feature}>
-            <Text style={styles.featureIcon}>🎙️</Text>
-            <Text style={styles.featureText}>Walkie-Talkie</Text>
-          </View>
-          <View style={styles.feature}>
-            <Text style={styles.featureIcon}>👥</Text>
-            <Text style={styles.featureText}>Passageiros</Text>
-          </View>
+        {/* Bottom spacer */}
+        <View style={styles.middleSpacer} />
+
+        {/* Bottom text */}
+        <View style={styles.bottomTextContainer}>
+          <Text style={styles.bottomTitle}>Social Voice Hub</Text>
+          <Text style={styles.bottomSubtitle}>Chat ao vivo + Walkie-Talkie</Text>
         </View>
       </View>
-    </LinearGradient>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    width: '100%',
-  },
-  iconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  icon: {
-    fontSize: 64,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 48,
-    opacity: 0.9,
-    paddingHorizontal: 16,
-  },
-  loginButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    marginBottom: 48,
   },
-  googleIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 12,
-  },
-  loginButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333333',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#667eea',
+    color: '#666',
   },
-  features: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginTop: 24,
-  },
-  feature: {
+  content: {
+    flex: 1,
     alignItems: 'center',
+    paddingHorizontal: 32,
   },
-  featureIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+  topSpacer: {
+    flex: 0.45,
   },
-  featureText: {
+  title: {
+    fontSize: 56,
+    fontWeight: '700',
+    color: '#1F2937',
+    letterSpacing: 2,
+    marginBottom: 16,
+  },
+  buttonShadow: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 14,
+    borderRadius: 100,
+  },
+  button: {
+    width: 280,
+    height: 90,
+    borderRadius: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#7F1D1D',
+    overflow: 'hidden',
+  },
+  buttonGloss: {
+    position: 'absolute',
+    top: 2,
+    left: 8,
+    right: 8,
+    height: '50%',
+    borderTopLeftRadius: 100,
+    borderTopRightRadius: 100,
+  },
+  buttonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonIcon: {
+    marginRight: 12,
+  },
+  buttonText: {
+    fontSize: 36,
+    fontWeight: '800',
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '500',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+    letterSpacing: 1,
+  },
+  middleSpacer: {
+    flex: 0.45,
+  },
+  bottomTextContainer: {
+    alignItems: 'center',
+    paddingBottom: 32,
+  },
+  bottomTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 6,
+  },
+  bottomSubtitle: {
+    fontSize: 15,
+    color: '#6B7280',
+    fontWeight: '400',
   },
 });
