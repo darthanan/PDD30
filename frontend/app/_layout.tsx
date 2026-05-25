@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { AuthProvider } from '../src/contexts/AuthContext';
-import { useIconFonts } from '@/src/hooks/use-icon-fonts';
+import { useIconFonts } from '../src/hooks/use-icon-fonts';
 
 SplashScreen.preventAutoHideAsync();
 
