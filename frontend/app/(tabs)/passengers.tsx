@@ -158,7 +158,7 @@ export default function PassengersScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Ionicons name="people" size={24} color="#667eea" />
+          <Ionicons name="people" size={24} color="#1E40AF" />
           <Text style={styles.headerTitle}>Passageiros Uber</Text>
         </View>
         <TouchableOpacity
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#667eea',
+    backgroundColor: '#1E40AF',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#F0F0FF',
+    backgroundColor: '#DBEAFE',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   modalButtonSave: {
-    backgroundColor: '#667eea',
+    backgroundColor: '#1E40AF',
   },
   modalButtonTextCancel: {
     fontSize: 16,

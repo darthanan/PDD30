@@ -8,12 +8,12 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   Image,
   Keyboard,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useSocket, Message } from '../../src/hooks/useSocket';
 import { Audio } from 'expo-av';
@@ -21,42 +21,34 @@ import * as Haptics from 'expo-haptics';
 
 export default function ChatScreen() {
   const { user, logout } = useAuth();
-  const { connected, messages, users, userTalking, sendMessage, startTalking, stopTalking, sendVoiceData, onVoiceStream, offVoiceStream } = useSocket();
+  const { connected, messages, users, userTalking, sendMessage, startTalking, stopTalking, onVoiceStream, offVoiceStream } = useSocket();
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [showVoiceMode, setShowVoiceMode] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
-  const soundRef = useRef<Audio.Sound | null>(null);
 
   useEffect(() => {
-    // Request audio permissions
     requestAudioPermissions();
 
-    // Setup audio mode
     Audio.setAudioModeAsync({
       allowsRecordingIOS: true,
       playsInSilentModeIOS: true,
       playThroughEarpieceAndroid: false,
-      staysActiveInBackground: true,
+      staysActiveInBackground: false,
     });
 
-    // Listen for voice streams
-    onVoiceStream(handleVoiceStream);
+    onVoiceStream(() => {});
 
     return () => {
       offVoiceStream();
       if (recordingRef.current) {
-        recordingRef.current.stopAndUnloadAsync();
-      }
-      if (soundRef.current) {
-        soundRef.current.unloadAsync();
+        recordingRef.current.stopAndUnloadAsync().catch(() => {});
       }
     };
   }, []);
 
   useEffect(() => {
-    // Scroll to bottom when new message arrives
     if (messages.length > 0) {
       flatListRef.current?.scrollToEnd({ animated: true });
     }
@@ -66,7 +58,7 @@ export default function ChatScreen() {
     try {
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permissão Negada', 'Permita o acesso ao microfone para usar o walkie-talkie');
+        console.log('Audio permission denied');
       }
     } catch (error) {
       console.error('Error requesting audio permissions:', error);
@@ -83,9 +75,10 @@ export default function ChatScreen() {
 
   const handlePressIn = async () => {
     try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      if (Platform.OS !== 'web') {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
       
-      // Start recording
       const recording = new Audio.Recording();
       await recording.prepareToRecordAsync({
         android: {
@@ -116,39 +109,18 @@ export default function ChatScreen() {
       recordingRef.current = recording;
       setIsRecording(true);
       startTalking();
-
-      // Start sending audio chunks periodically
-      const interval = setInterval(async () => {
-        if (recordingRef.current) {
-          try {
-            const status = await recordingRef.current.getStatusAsync();
-            if (status.isRecording) {
-              // Get recording URI and convert to base64
-              const uri = recordingRef.current.getURI();
-              if (uri) {
-                // For real implementation, you would read and send chunks
-                // This is simplified for the MVP
-              }
-            }
-          } catch (error) {
-            console.error('Error getting recording status:', error);
-          }
-        }
-      }, 100);
-
-      recordingRef.current._interval = interval;
     } catch (error) {
       console.error('Error starting recording:', error);
-      Alert.alert('Erro', 'Não foi possível iniciar a gravação');
     }
   };
 
   const handlePressOut = async () => {
     try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (Platform.OS !== 'web') {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
       
       if (recordingRef.current) {
-        clearInterval(recordingRef.current._interval);
         await recordingRef.current.stopAndUnloadAsync();
         recordingRef.current = null;
       }
@@ -160,60 +132,91 @@ export default function ChatScreen() {
     }
   };
 
-  const handleVoiceStream = async (data: { user_id: string; audio_data: string }) => {
-    try {
-      // Play received audio
-      // For real implementation, you would decode and play the audio data
-      // This is simplified for the MVP
-    } catch (error) {
-      console.error('Error playing audio:', error);
-    }
+  const formatTimeAgo = (timestamp: string) => {
+    const now = new Date();
+    const msgTime = new Date(timestamp);
+    const diff = Math.floor((now.getTime() - msgTime.getTime()) / 1000);
+    
+    if (diff < 60) return 'agora';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+    return `${Math.floor(diff / 86400)}d`;
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isOwnMessage = item.user_id === user?.user_id;
+    const timeAgo = formatTimeAgo(item.timestamp);
 
-    return (
-      <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
-        {!isOwnMessage && (
+    if (isOwnMessage) {
+      // Own message - blue, right side, avatar on right
+      return (
+        <View style={styles.ownMessageRow} testID={`message-${item.message_id}`}>
+          <View style={styles.ownBubble}>
+            <Text style={styles.ownMessageText}>{item.text}</Text>
+            <View style={styles.ownTimeContainer}>
+              <Text style={styles.ownTimeText}>{timeAgo}</Text>
+              <Ionicons name="checkmark" size={12} color="#FFFFFF" style={{ marginLeft: 2 }} />
+            </View>
+          </View>
           <Image
-            source={{ uri: item.user_picture || 'https://via.placeholder.com/40' }}
-            style={styles.avatar}
+            source={{ uri: item.user_picture || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(item.user_name) }}
+            style={styles.messageAvatar}
           />
-        )}
-        <View style={[styles.messageBubble, isOwnMessage ? styles.ownMessage : styles.otherMessage]}>
-          {!isOwnMessage && <Text style={styles.senderName}>{item.user_name}</Text>}
-          <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>{item.text}</Text>
-          <Text style={[styles.timestamp, isOwnMessage && styles.ownTimestamp]}>
-            {new Date(item.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-          </Text>
+        </View>
+      );
+    }
+
+    // Other person's message - gray, left side, avatar on left
+    return (
+      <View style={styles.otherMessageRow} testID={`message-${item.message_id}`}>
+        <Image
+          source={{ uri: item.user_picture || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(item.user_name) }}
+          style={styles.messageAvatar}
+        />
+        <View style={styles.otherBubble}>
+          <Text style={styles.otherSenderName}>{item.user_name}</Text>
+          <View style={styles.otherMessageContent}>
+            <Text style={styles.otherMessageText}>{item.text}</Text>
+            <Text style={styles.otherTimeText}>{timeAgo}</Text>
+          </View>
         </View>
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <View style={[styles.statusDot, connected && styles.statusConnected]} />
+          <Image
+            source={{ uri: user?.picture || 'https://ui-avatars.com/api/?name=PDD&background=B91C1C&color=fff' }}
+            style={styles.headerAvatar}
+          />
           <View>
-            <Text style={styles.headerTitle}>Grupo</Text>
-            <Text style={styles.headerSubtitle}>
-              {users.length + 1} {users.length === 0 ? 'membro' : 'membros'} online
-            </Text>
+            <Text style={styles.headerName}>PDD+30</Text>
+            <View style={styles.statusRow}>
+              <View style={[styles.statusDot, connected && styles.statusConnected]} />
+              <Text style={styles.statusText}>
+                {connected ? `${users.length + 1} online` : 'Conectando...'}
+              </Text>
+            </View>
           </View>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity
-            style={styles.voiceModeButton}
+            style={styles.headerIconButton}
             onPress={() => setShowVoiceMode(!showVoiceMode)}
+            testID="voice-mode-toggle"
           >
-            <Ionicons name="mic" size={24} color="#667eea" />
+            <Ionicons 
+              name={showVoiceMode ? "chatbubbles-outline" : "mic-outline"} 
+              size={24} 
+              color="#374151" 
+            />
           </TouchableOpacity>
-          <TouchableOpacity onPress={logout} style={styles.logoutButton}>
-            <Ionicons name="log-out-outline" size={24} color="#666" />
+          <TouchableOpacity onPress={logout} style={styles.headerIconButton} testID="logout-button">
+            <Ionicons name="log-out-outline" size={24} color="#374151" />
           </TouchableOpacity>
         </View>
       </View>
@@ -226,45 +229,56 @@ export default function ChatScreen() {
         </View>
       )}
 
-      {/* Messages List */}
       {!showVoiceMode ? (
         <KeyboardAvoidingView
           style={styles.content}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            renderItem={renderMessage}
-            keyExtractor={(item) => item.message_id}
-            contentContainerStyle={styles.messagesList}
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          />
+          {messages.length === 0 ? (
+            <View style={styles.emptyChat}>
+              <Ionicons name="chatbubbles-outline" size={64} color="#D1D5DB" />
+              <Text style={styles.emptyChatText}>Nenhuma mensagem ainda</Text>
+              <Text style={styles.emptyChatSubtext}>Envie a primeira mensagem para o grupo</Text>
+            </View>
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              keyExtractor={(item) => item.message_id}
+              contentContainerStyle={styles.messagesList}
+              onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            />
+          )}
 
-          {/* Input */}
+          {/* Input - Uber style */}
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
               placeholder="Digite uma mensagem..."
+              placeholderTextColor="#9CA3AF"
               value={inputText}
               onChangeText={setInputText}
               multiline
               maxLength={500}
+              testID="message-input"
             />
-            <TouchableOpacity
-              style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
-              onPress={handleSendMessage}
-              disabled={!inputText.trim()}
-            >
-              <Ionicons name="send" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
+            {inputText.trim().length > 0 && (
+              <TouchableOpacity
+                style={styles.sendButton}
+                onPress={handleSendMessage}
+                testID="send-message-button"
+              >
+                <Ionicons name="send" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            )}
           </View>
         </KeyboardAvoidingView>
       ) : (
         /* Walkie-Talkie Mode */
         <View style={styles.voiceMode}>
-          <Text style={styles.voiceModeTitle}>Modo Walkie-Talkie</Text>
+          <Text style={styles.voiceModeTitle}>Walkie-Talkie</Text>
           <Text style={styles.voiceModeSubtitle}>Pressione e segure para falar</Text>
 
           <TouchableOpacity
@@ -272,8 +286,9 @@ export default function ChatScreen() {
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
             activeOpacity={0.8}
+            testID="walkie-talkie-button"
           >
-            <Ionicons name="mic" size={64} color="#FFFFFF" />
+            <Ionicons name="mic" size={72} color="#FFFFFF" />
           </TouchableOpacity>
 
           {isRecording && (
@@ -284,8 +299,7 @@ export default function ChatScreen() {
           )}
 
           <Text style={styles.voiceModeInstruction}>
-            Pressione e segure o botão do microfone para falar.
-            Todos no grupo ouvirão em tempo real.
+            Todos os {users.length + 1} membros do grupo ouvirão sua mensagem.
           </Text>
         </View>
       )}
@@ -296,58 +310,68 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F3F4F6',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: '#E5E7EB',
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+  },
+  headerAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 12,
+    backgroundColor: '#D1D5DB',
+  },
+  headerName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
   },
   statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#999',
-    marginRight: 12,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#9CA3AF',
+    marginRight: 6,
   },
   statusConnected: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#10B981',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  headerSubtitle: {
+  statusText: {
     fontSize: 12,
-    color: '#666',
-    marginTop: 2,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  voiceModeButton: {
+  headerIconButton: {
     padding: 8,
-    marginRight: 8,
-  },
-  logoutButton: {
-    padding: 8,
+    marginLeft: 4,
   },
   talkingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#667eea',
-    paddingVertical: 8,
+    backgroundColor: '#B91C1C',
+    paddingVertical: 10,
     paddingHorizontal: 16,
     justifyContent: 'center',
   },
@@ -361,87 +385,134 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   messagesList: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 16,
+    paddingBottom: 20,
   },
-  messageContainer: {
+  // OTHER MESSAGE (gray, left)
+  otherMessageRow: {
     flexDirection: 'row',
-    marginBottom: 16,
     alignItems: 'flex-end',
+    marginBottom: 12,
   },
-  ownMessageContainer: {
-    justifyContent: 'flex-end',
+  messageAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#D1D5DB',
   },
-  avatar: {
-    width: 40,
-    height: 40,
+  otherBubble: {
+    backgroundColor: '#E5E7EB',
     borderRadius: 20,
-    marginRight: 8,
-  },
-  messageBubble: {
-    maxWidth: '70%',
     paddingHorizontal: 16,
     paddingVertical: 10,
+    marginLeft: 8,
+    maxWidth: '75%',
+  },
+  otherSenderName: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  otherMessageContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  otherMessageText: {
+    fontSize: 15,
+    color: '#1F2937',
+    marginRight: 8,
+    flexShrink: 1,
+  },
+  otherTimeText: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    fontWeight: '500',
+  },
+  // OWN MESSAGE (blue, right)
+  ownMessageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    marginBottom: 12,
+  },
+  ownBubble: {
+    backgroundColor: '#1E40AF',
     borderRadius: 20,
-  },
-  otherMessage: {
-    backgroundColor: '#FFFFFF',
-    borderBottomLeftRadius: 4,
-  },
-  ownMessage: {
-    backgroundColor: '#667eea',
-    borderBottomRightRadius: 4,
-  },
-  senderName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#667eea',
-    marginBottom: 4,
-  },
-  messageText: {
-    fontSize: 16,
-    color: '#333',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginRight: 8,
+    maxWidth: '75%',
+    flexDirection: 'row',
+    alignItems: 'flex-end',
   },
   ownMessageText: {
+    fontSize: 15,
     color: '#FFFFFF',
+    marginRight: 8,
+    flexShrink: 1,
   },
-  timestamp: {
+  ownTimeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ownTimeText: {
     fontSize: 10,
-    color: '#999',
-    marginTop: 4,
+    color: '#FFFFFF',
+    opacity: 0.8,
+    fontWeight: '500',
   },
-  ownTimestamp: {
-    color: '#E8E8FF',
+  // EMPTY STATE
+  emptyChat: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
   },
+  emptyChatText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 16,
+  },
+  emptyChatSubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  // INPUT (Uber style)
   inputContainer: {
     flexDirection: 'row',
-    padding: 16,
+    padding: 12,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: '#E5E7EB',
     alignItems: 'flex-end',
   },
   input: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
     borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginRight: 8,
-    maxHeight: 100,
+    paddingHorizontal: 18,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 10,
     fontSize: 16,
+    maxHeight: 100,
+    color: '#111827',
   },
   sendButton: {
-    backgroundColor: '#667eea',
+    backgroundColor: '#1E40AF',
     width: 44,
     height: 44,
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: 8,
   },
-  sendButtonDisabled: {
-    backgroundColor: '#CCC',
-  },
+  // VOICE MODE
   voiceMode: {
     flex: 1,
     justifyContent: 'center',
@@ -449,55 +520,55 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   voiceModeTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111827',
     marginBottom: 8,
   },
   voiceModeSubtitle: {
     fontSize: 16,
-    color: '#666',
-    marginBottom: 48,
+    color: '#6B7280',
+    marginBottom: 56,
   },
   talkButton: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: '#667eea',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: '#B91C1C',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowColor: '#B91C1C',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
   },
   talkButtonActive: {
-    backgroundColor: '#FF5252',
-    transform: [{ scale: 1.1 }],
+    backgroundColor: '#DC2626',
+    transform: [{ scale: 1.08 }],
   },
   recordingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 32,
   },
   recordingDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#FF5252',
+    backgroundColor: '#DC2626',
     marginRight: 8,
   },
   recordingText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FF5252',
+    fontWeight: '700',
+    color: '#DC2626',
   },
   voiceModeInstruction: {
     fontSize: 14,
-    color: '#666',
+    color: '#6B7280',
     textAlign: 'center',
-    marginTop: 48,
+    marginTop: 56,
     lineHeight: 20,
   },
 });

@@ -1,10 +1,9 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useAuth } from '../src/contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 
 export default function Index() {
   const { user, loading, login } = useAuth();
@@ -33,43 +32,56 @@ export default function Index() {
         {/* Top spacer */}
         <View style={styles.topSpacer} />
 
-        {/* App Title */}
-        <Text style={styles.title} testID="app-title">SVH</Text>
+        {/* PDD Label */}
+        <Text style={styles.pddLabel} testID="app-title">PDD</Text>
 
-        {/* Main red pill button */}
-        <TouchableOpacity
-          style={styles.buttonShadow}
-          onPress={login}
-          activeOpacity={0.85}
-          testID="login-button"
-        >
-          <LinearGradient
-            colors={['#DC2626', '#991B1B', '#7F1D1D']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={styles.button}
+        {/* +R$30 Red pill button with glow */}
+        <View style={styles.buttonGlowWrapper}>
+          {/* Glow effect */}
+          <View style={styles.glow} />
+          
+          <TouchableOpacity
+            style={styles.buttonShadow}
+            onPress={login}
+            activeOpacity={0.85}
+            testID="login-button"
           >
-            {/* Inner highlight to create gloss effect */}
             <LinearGradient
-              colors={['rgba(255,255,255,0.35)', 'rgba(255,255,255,0)']}
+              colors={['#B91C1C', '#7F1D1D', '#5C0F0F']}
               start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 0.5 }}
-              style={styles.buttonGloss}
-            />
-            <View style={styles.buttonInner}>
-              <Ionicons name="logo-google" size={26} color="#FFFFFF" style={styles.buttonIcon} />
-              <Text style={styles.buttonText}>Entrar</Text>
-            </View>
-          </LinearGradient>
-        </TouchableOpacity>
+              end={{ x: 0, y: 1 }}
+              style={styles.button}
+            >
+              {/* Outer silver border ring */}
+              <View style={styles.silverRing}>
+                {/* Inner gradient with gloss */}
+                <LinearGradient
+                  colors={['#DC2626', '#991B1B', '#7F1D1D']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={styles.buttonInnerGradient}
+                >
+                  {/* Gloss highlight on top */}
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.45)', 'rgba(255,255,255,0)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 0.6 }}
+                    style={styles.buttonGloss}
+                  />
+                  <Text style={styles.buttonText}>+R$30</Text>
+                </LinearGradient>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
 
         {/* Bottom spacer */}
         <View style={styles.middleSpacer} />
 
         {/* Bottom text */}
         <View style={styles.bottomTextContainer}>
-          <Text style={styles.bottomTitle}>Social Voice Hub</Text>
-          <Text style={styles.bottomSubtitle}>Chat ao vivo + Walkie-Talkie</Text>
+          <Text style={styles.bottomTitle}>Próxima viagem: +R$30</Text>
+          <Text style={styles.bottomSubtitle}>Preço dinâmico mínimo</Text>
         </View>
       </View>
     </SafeAreaView>
@@ -97,68 +109,93 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   topSpacer: {
-    flex: 0.45,
+    flex: 0.4,
   },
-  title: {
-    fontSize: 56,
-    fontWeight: '700',
-    color: '#1F2937',
+  pddLabel: {
+    fontSize: 64,
+    fontWeight: '800',
+    color: '#374151',
     letterSpacing: 2,
-    marginBottom: 16,
+    marginBottom: 8,
+  },
+  buttonGlowWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  glow: {
+    position: 'absolute',
+    width: 360,
+    height: 140,
+    borderRadius: 80,
+    backgroundColor: '#FCD34D',
+    opacity: 0.5,
+    shadowColor: '#FCD34D',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 50,
+    elevation: 20,
   },
   buttonShadow: {
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 14,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 12,
     borderRadius: 100,
   },
   button: {
-    width: 280,
-    height: 90,
+    width: 320,
+    height: 110,
+    borderRadius: 100,
+    padding: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  silverRing: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 100,
+    backgroundColor: '#9CA3AF',
+    padding: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonInnerGradient: {
+    width: '100%',
+    height: '100%',
     borderRadius: 100,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#7F1D1D',
     overflow: 'hidden',
   },
   buttonGloss: {
     position: 'absolute',
-    top: 2,
-    left: 8,
-    right: 8,
-    height: '50%',
+    top: 4,
+    left: 12,
+    right: 12,
+    height: '45%',
     borderTopLeftRadius: 100,
     borderTopRightRadius: 100,
   },
-  buttonInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonIcon: {
-    marginRight: 12,
-  },
   buttonText: {
-    fontSize: 36,
-    fontWeight: '800',
+    fontSize: 44,
+    fontWeight: '900',
     color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
   middleSpacer: {
-    flex: 0.45,
+    flex: 0.5,
   },
   bottomTextContainer: {
     alignItems: 'center',
     paddingBottom: 32,
   },
   bottomTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: '#1F2937',
     marginBottom: 6,
