@@ -33,15 +33,6 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="map"
-        options={{
-          title: 'Mapa',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="map" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="passengers"
         options={{
           title: 'Passageiros',

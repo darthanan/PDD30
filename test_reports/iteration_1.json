@@ -1,0 +1,70 @@
+{
+  "summary": "Backend-only test for Voice Hub app (Chat + Passengers). 15/19 pytest tests pass (REST APIs 100% green, all auth & passenger CRUD verified end-to-end with seeded session). The 4 Socket.IO tests FAIL because /socket.io/* is not reachable through the public ingress URL (returns 404 / Expo HTML) — only /api/* is routed to backend:8001. Socket.IO works fine on localhost:8001 (returns 200). This breaks real-time chat & walkie-talkie for any real client using EXPO_PUBLIC_BACKEND_URL.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "/socket.io/* (Socket.IO ASGI mount)",
+        "issue": "Socket.IO endpoint is NOT reachable via the public URL (https://social-voice-hub-7.preview.emergentagent.com/socket.io/?EIO=4&transport=polling -> 404 returning Expo HTML). Internally http://localhost:8001/socket.io/... returns 200. The K8s ingress only proxies /api/* to backend:8001. Result: frontend useSocket.ts will fail to connect in production preview, breaking Chat (send_message/new_message), Walkie-Talkie (start_talking/stop_talking/voice_data), and join_group. FIX: mount Socket.IO under /api/socket.io path on backend, e.g. `socket_app = socketio.ASGIApp(sio, app, socketio_path='/api/socket.io')` AND update frontend `io(BACKEND_URL, { path: '/api/socket.io', ... })`.",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "POST /api/auth/logout",
+        "issue": "Returns 200 even when Bearer token does not correspond to any real session (deletes nothing). Not a bug per se, but consider returning 200 only after confirming a session existed for clearer client semantics."
+      },
+      {
+        "endpoint": "/socket.io update_location handler",
+        "issue": "Server still has update_location event handler & location field on connected_users even though the live map feature was removed. Dead code — should be cleaned up or kept intentionally documented."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Chat / Walkie-Talkie real-time",
+        "issue": "useSocket.ts connects to process.env.EXPO_PUBLIC_BACKEND_URL with default path '/socket.io'. Because public ingress does not route that path to the backend, the Socket.IO handshake will 404 and the client will keep retrying (5 attempts, then give up). Must coordinate with backend fix (path '/api/socket.io').",
+        "affected_testIDs": []
+      }
+    ],
+    "design_issues": [],
+    "react_native_issues": [
+      {
+        "component": "expo-av",
+        "issue": "Deprecation warning printed in Expo logs: '[expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Use the `expo-audio` and `expo-video` packages to replace the required functionality.' Migrate the walkie-talkie audio recording/playback from expo-av to expo-audio. Reference: /app/frontend/package.json + audio usage (likely /app/frontend/app/(tabs)/chat.tsx)."
+      },
+      {
+        "component": "shadow* style props",
+        "issue": "React Native logs: '\"shadow*\" style props are deprecated. Use \"boxShadow\".' Replace shadowColor/shadowOffset/shadowOpacity/shadowRadius with the new boxShadow shorthand."
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_backend_api.py",
+    "/app/backend/tests/conftest.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "[CRITICAL] Make Socket.IO reachable through the public ingress. Recommended: backend mounts Socket.IO at '/api/socket.io' (socketio.ASGIApp(sio, app, socketio_path='/api/socket.io')) and frontend useSocket.ts uses `io(BACKEND_URL, { path: '/api/socket.io', transports: ['websocket','polling'], ... })`. Without this, chat & walkie-talkie are fully broken for real users.",
+    "Migrate expo-av to expo-audio (and expo-video if used) before Expo SDK 54.",
+    "Replace deprecated shadow* style props with boxShadow.",
+    "Optional cleanup: remove update_location socket handler and `location` field from connected_users now that the map feature has been removed.",
+    "Frontend chat.tsx: when Socket.IO disconnects, surface a clear error state in UI ('Cannot connect to chat server') instead of silent retries."
+  ],
+  "critical_code_review_comments": [
+    "server.py is mounting Socket.IO at the root path '/' via `app.mount(\"/\", socket_app)`. This works inside the container but conflicts with the ingress routing rule that only forwards /api/* to backend. Use a /api-prefixed Socket.IO path.",
+    "get_current_user() takes `authorization` as a plain str param, not a FastAPI Header dependency — that's fine because each route declares Header(None) and passes it explicitly. Just confirming intentional.",
+    "create_session expects request body to be a raw dict — switch to a Pydantic model for stricter validation (e.g. SessionCreate { session_token: str })."
+  ],
+  "updated_files": [
+    "/app/backend/tests/conftest.py (created)",
+    "/app/backend/tests/test_backend_api.py (created)"
+  ],
+  "success_rate": {"backend": "78.9% (15/19) — 100% for REST (/api/*), 0% for Socket.IO via public URL", "frontend": "not tested (backend-only review)"},
+  "seed_data_creation": "Test seeds a temporary user + user_session directly into MongoDB (TEST_ prefix) to exercise authed passenger endpoints; cleaned up via pytest module-scoped fixture teardown.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "After main agent fixes Socket.IO path (backend mount + frontend path option), re-run /app/backend/tests/test_backend_api.py — the TestSocketIO class will need updating: change the polling URL to BASE_URL + '/api/socket.io/?EIO=4&transport=polling' and pass `socketio_path='/api/socket.io'` to socketio.Client.connect(). All other tests should keep passing.",
+  "rca_of_issue": "RCA for Socket.IO 404 via public URL: (1) FastAPI app mounts socket_app at '/' inside container. (2) Kubernetes ingress routing rule forwards only path prefix /api/* to backend service on port 8001; all other paths (including /socket.io/) are forwarded to the Expo frontend on port 3000. (3) Expo dev server has no /socket.io route, so it returns its HTML 404 page. Reproduction: `curl -i 'https://social-voice-hub-7.preview.emergentagent.com/socket.io/?EIO=4&transport=polling'` -> 404 HTML; `curl -i 'http://localhost:8001/socket.io/?EIO=4&transport=polling'` -> 200 with `0{\"sid\":...}`. Mitigation: move Socket.IO to /api/socket.io path on backend and configure socket.io-client `path: '/api/socket.io'` on frontend."
+}

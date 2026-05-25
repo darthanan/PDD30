@@ -35,7 +35,7 @@ export default function Index() {
         
         <Text style={styles.title}>Social Voice Hub</Text>
         <Text style={styles.subtitle}>
-          Chat ao vivo, comunicação por voz e localização em tempo real
+          Chat ao vivo e comunicação por voz com seus amigos
         </Text>
 
         <TouchableOpacity 
@@ -60,8 +60,8 @@ export default function Index() {
             <Text style={styles.featureText}>Walkie-Talkie</Text>
           </View>
           <View style={styles.feature}>
-            <Text style={styles.featureIcon}>📍</Text>
-            <Text style={styles.featureText}>Mapa ao Vivo</Text>
+            <Text style={styles.featureIcon}>👥</Text>
+            <Text style={styles.featureText}>Passageiros</Text>
           </View>
         </View>
       </View>

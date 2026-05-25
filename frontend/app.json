@@ -11,9 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Permite comunicação por voz em tempo real",
-        "NSLocationWhenInUseUsageDescription": "Mostra sua localização no mapa ao vivo",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Compartilha sua localização com o grupo"
+        "NSMicrophoneUsageDescription": "Permite comunicação por voz em tempo real"
       }
     },
     "android": {
@@ -23,15 +21,8 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "RECORD_AUDIO",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
-      ],
-      "config": {
-        "googleMaps": {
-          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
-        }
-      }
+        "RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",

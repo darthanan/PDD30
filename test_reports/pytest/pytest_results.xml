@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="19" time="5.256" timestamp="2026-05-25T21:41:31.647187+00:00" hostname="agent-env-c83875eb-f75d-4558-a91f-72c7a3b8a910"><testcase classname="test_backend_api.TestAuthSession" name="test_missing_session_token_returns_400" time="0.207" /><testcase classname="test_backend_api.TestAuthSession" name="test_invalid_session_token_returns_401" time="0.279" /><testcase classname="test_backend_api.TestAuthSession" name="test_empty_session_token_string_returns_400" time="0.115" /><testcase classname="test_backend_api.TestAuthMe" name="test_no_auth_header_returns_401" time="0.145" /><testcase classname="test_backend_api.TestAuthMe" name="test_malformed_authorization_returns_401" time="0.130" /><testcase classname="test_backend_api.TestAuthMe" name="test_invalid_bearer_token_returns_401" time="0.155" /><testcase classname="test_backend_api.TestAuthLogout" name="test_logout_without_auth_returns_401" time="0.106" /><testcase classname="test_backend_api.TestAuthLogout" name="test_logout_with_invalid_token_still_returns_200" time="0.176" /><testcase classname="test_backend_api.TestPassengers" name="test_list_passengers_requires_auth" time="0.177" /><testcase classname="test_backend_api.TestPassengers" name="test_create_passenger_requires_auth" time="0.119" /><testcase classname="test_backend_api.TestPassengers" name="test_delete_passenger_requires_auth" time="0.104" /><testcase classname="test_backend_api.TestPassengers" name="test_auth_me_with_seeded_session" time="0.249" /><testcase classname="test_backend_api.TestPassengers" name="test_create_then_list_then_delete_passenger" time="0.297" /><testcase classname="test_backend_api.TestPassengers" name="test_delete_nonexistent_passenger_returns_404" time="0.103" /><testcase classname="test_backend_api.TestPassengers" name="test_create_passenger_invalid_payload_returns_422" time="0.102" /><testcase classname="test_backend_api.TestSocketIO" name="test_socket_io_endpoint_reachable" time="0.923"><failure message="AssertionError: Got 404: &lt;!DOCTYPE html&gt;&lt;html  lang=&quot;en&quot; style=&quot;height:100%&quot;&gt;&lt;head&gt;&lt;title data-rh=&quot;true&quot;&gt;&lt;/title&gt;&lt;meta charSet=&quot;utf-8&quot;/&gt;&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;/&gt;&lt;m&#10;assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">test_backend_api.py:225: in test_socket_io_endpoint_reachable
+    assert r.status_code == 200, f"Got {r.status_code}: {r.text[:200]}"
+E   AssertionError: Got 404: &lt;!DOCTYPE html&gt;&lt;html  lang="en" style="height:100%"&gt;&lt;head&gt;&lt;title data-rh="true"&gt;&lt;/title&gt;&lt;meta charSet="utf-8"/&gt;&lt;meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/&gt;&lt;m
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="test_backend_api.TestSocketIO" name="test_socket_io_connect_and_join_group" time="0.418"><failure message="socketio.exceptions.ConnectionError: Unexpected status code 404 in server response">/root/.venv/lib/python3.11/site-packages/socketio/client.py:149: in connect
+    self.eio.connect(real_url, headers=real_headers,
+/root/.venv/lib/python3.11/site-packages/engineio/client.py:96: in connect
+    return getattr(self, '_connect_' + self.transports[0])(
+/root/.venv/lib/python3.11/site-packages/engineio/client.py:209: in _connect_polling
+    raise exceptions.ConnectionError(
+E   engineio.exceptions.ConnectionError: ('Unexpected status code 404 in server response', None)
+
+The above exception was the direct cause of the following exception:
+test_backend_api.py:246: in test_socket_io_connect_and_join_group
+    sio.connect(BASE_URL, transports=["polling"], wait_timeout=10)
+/root/.venv/lib/python3.11/site-packages/socketio/client.py:161: in connect
+    raise exceptions.ConnectionError(exc.args[0]) from exc
+E   socketio.exceptions.ConnectionError: Unexpected status code 404 in server response</failure></testcase><testcase classname="test_backend_api.TestSocketIO" name="test_socket_io_send_message_broadcast" time="0.809"><failure message="socketio.exceptions.ConnectionError: Unexpected status code 404 in server response">/root/.venv/lib/python3.11/site-packages/socketio/client.py:149: in connect
+    self.eio.connect(real_url, headers=real_headers,
+/root/.venv/lib/python3.11/site-packages/engineio/client.py:96: in connect
+    return getattr(self, '_connect_' + self.transports[0])(
+/root/.venv/lib/python3.11/site-packages/engineio/client.py:209: in _connect_polling
+    raise exceptions.ConnectionError(
+E   engineio.exceptions.ConnectionError: ('Unexpected status code 404 in server response', None)
+
+The above exception was the direct cause of the following exception:
+test_backend_api.py:282: in test_socket_io_send_message_broadcast
+    sender.connect(BASE_URL, transports=["polling"], wait_timeout=10)
+/root/.venv/lib/python3.11/site-packages/socketio/client.py:161: in connect
+    raise exceptions.ConnectionError(exc.args[0]) from exc
+E   socketio.exceptions.ConnectionError: Unexpected status code 404 in server response</failure></testcase><testcase classname="test_backend_api.TestSocketIO" name="test_socket_io_walkie_talkie_events" time="0.381"><failure message="socketio.exceptions.ConnectionError: Unexpected status code 404 in server response">/root/.venv/lib/python3.11/site-packages/socketio/client.py:149: in connect
+    self.eio.connect(real_url, headers=real_headers,
+/root/.venv/lib/python3.11/site-packages/engineio/client.py:96: in connect
+    return getattr(self, '_connect_' + self.transports[0])(
+/root/.venv/lib/python3.11/site-packages/engineio/client.py:209: in _connect_polling
+    raise exceptions.ConnectionError(
+E   engineio.exceptions.ConnectionError: ('Unexpected status code 404 in server response', None)
+
+The above exception was the direct cause of the following exception:
+test_backend_api.py:327: in test_socket_io_walkie_talkie_events
+    a.connect(BASE_URL, transports=["polling"], wait_timeout=10)
+/root/.venv/lib/python3.11/site-packages/socketio/client.py:161: in connect
+    raise exceptions.ConnectionError(exc.args[0]) from exc
+E   socketio.exceptions.ConnectionError: Unexpected status code 404 in server response</failure></testcase></testsuite></testsuites>
