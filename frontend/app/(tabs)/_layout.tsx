@@ -49,6 +49,16 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="voice"
+        options={{
+          title: 'Walkie',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="radio" size={size} color={color} />
+          ),
+          tabBarActiveTintColor: '#B91C1C',
+        }}
+      />
     </Tabs>
   );
 }

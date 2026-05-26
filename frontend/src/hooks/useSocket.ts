@@ -26,6 +26,8 @@ export const useSocket = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<ConnectedUser[]>([]);
   const [userTalking, setUserTalking] = useState<{ user_id: string; user_name: string; talking: boolean } | null>(null);
+  // Ref to store the voice stream callback so it doesn't need to be in the socket event listener closure
+  const voiceStreamCallbackRef = useRef<((data: { user_id: string; audio_data: string }) => void) | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -83,6 +85,13 @@ export const useSocket = () => {
       setUserTalking(data.talking ? data : null);
     });
 
+    // Route incoming voice audio to whichever callback is currently registered
+    socket.on('voice_stream', (data: { user_id: string; audio_data: string }) => {
+      if (voiceStreamCallbackRef.current) {
+        voiceStreamCallbackRef.current(data);
+      }
+    });
+
     return () => {
       socket.disconnect();
     };
@@ -116,6 +125,7 @@ export const useSocket = () => {
     });
   };
 
+  /** Send a complete audio clip as a base64 string to all other users */
   const sendVoiceData = (audioData: string) => {
     if (!socketRef.current || !user) return;
 
@@ -125,14 +135,14 @@ export const useSocket = () => {
     });
   };
 
+  /** Register a callback that fires whenever a voice_stream event arrives */
   const onVoiceStream = (callback: (data: { user_id: string; audio_data: string }) => void) => {
-    if (!socketRef.current) return;
-    socketRef.current.on('voice_stream', callback);
+    voiceStreamCallbackRef.current = callback;
   };
 
+  /** Unregister the voice_stream callback */
   const offVoiceStream = () => {
-    if (!socketRef.current) return;
-    socketRef.current.off('voice_stream');
+    voiceStreamCallbackRef.current = null;
   };
 
   return {
