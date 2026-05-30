@@ -34,7 +34,7 @@ export default function MembersModal({ visible, onClose, currentUser, users, con
           user_picture: currentUser.picture,
           isOwner: true,
         },
-        ...users.map((u) => ({ ...u, isOwner: false })),
+        ...users.filter((u) => u.user_id !== currentUser.user_id).map((u) => ({ ...u, isOwner: false })),
       ]
     : users.map((u) => ({ ...u, isOwner: false }));
 

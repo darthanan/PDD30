@@ -124,6 +124,11 @@ export default function ChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
+        {/* Watermark Background */}
+        <View style={styles.watermarkContainer} pointerEvents="none">
+          <Text style={styles.watermarkText}>+30</Text>
+        </View>
+
         {messages.length === 0 ? (
           <View style={styles.emptyChat}>
             <Ionicons name="chatbubbles-outline" size={64} color="#D1D5DB" />
@@ -239,6 +244,19 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  watermarkContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: -1,
+  },
+  watermarkText: {
+    fontSize: 120,
+    fontWeight: 'bold',
+    color: '#000000',
+    opacity: 0.05,
+    transform: [{ rotate: '-45deg' }],
   },
   messagesList: {
     paddingHorizontal: 12,

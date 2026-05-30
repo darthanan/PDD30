@@ -267,7 +267,10 @@ export default function VoiceScreen() {
   // ─── Derived data ────────────────────────────────────────────────────────────
 
   const allMembers = user
-    ? [{ user_id: user.user_id, user_name: user.name, user_picture: user.picture }, ...users]
+    ? [
+        { user_id: user.user_id, user_name: user.name, user_picture: user.picture },
+        ...users.filter((u) => u.user_id !== user.user_id),
+      ]
     : users;
 
   const pulseScale1 = pulse1.interpolate({ inputRange: [0, 1], outputRange: [1, 1.4] });
