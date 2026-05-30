@@ -26,7 +26,9 @@ interface MembersModalProps {
 }
 
 export default function MembersModal({ visible, onClose, currentUser, users, connected }: MembersModalProps) {
-  const allMembers = currentUser
+  // Build unique members list (deduplicate by user_id)
+  const seen = new Set<string>();
+  const baseList = currentUser
     ? [
         {
           user_id: currentUser.user_id,
@@ -37,6 +39,11 @@ export default function MembersModal({ visible, onClose, currentUser, users, con
         ...users.filter((u) => u.user_id !== currentUser.user_id).map((u) => ({ ...u, isOwner: false })),
       ]
     : users.map((u) => ({ ...u, isOwner: false }));
+  const allMembers = baseList.filter((m) => {
+    if (seen.has(m.user_id)) return false;
+    seen.add(m.user_id);
+    return true;
+  });
 
   return (
     <Modal
@@ -70,7 +77,7 @@ export default function MembersModal({ visible, onClose, currentUser, users, con
         ) : (
           <FlatList
             data={allMembers}
-            keyExtractor={(item) => item.user_id}
+            keyExtractor={(item, index) => `${item.user_id}-${index}`}
             contentContainerStyle={styles.list}
             renderItem={({ item }) => (
               <View style={styles.memberRow} testID={`member-${item.user_id}`}>
